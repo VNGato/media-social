@@ -1,0 +1,11 @@
+# Ignorar dependências do Node (Frontend)
+node_modules/
+dist/
+build/
+
+# Ignorar banco de dados e caches do Python (Backend)
+*.sqlite
+*.sqlite3
+__pycache__/
+*.pyc
+.env
