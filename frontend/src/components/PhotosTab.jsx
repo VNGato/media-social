@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function PhotosTab() {
+export default function PhotosTab({ photos }) {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
       <div className="flex justify-between items-center mb-4">
@@ -9,16 +9,20 @@ export default function PhotosTab() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-        {/* Gerando várias fotos aleatórias */}
-        {[...Array(12)].map((_, i) => (
-          <div key={i} className="aspect-square bg-gray-100 rounded overflow-hidden border border-gray-200 cursor-pointer hover:opacity-90 transition">
-            <img 
-              src={`https://picsum.photos/400?random=${i + 50}`} 
-              className="w-full h-full object-cover" 
-              alt={`Foto ${i}`}
-            />
-          </div>
-        ))}
+        {/* Se não tiver fotos, mostra aviso */}
+        {photos && photos.length > 0 ? (
+            photos.map((photo) => (
+            <div key={photo.id} className="aspect-square bg-gray-100 rounded overflow-hidden border border-gray-200 cursor-pointer hover:opacity-90 transition">
+                <img 
+                src={photo.url} 
+                className="w-full h-full object-cover" 
+                alt="Galeria"
+                />
+            </div>
+            ))
+        ) : (
+            <p className="text-gray-500">Nenhuma foto encontrada.</p>
+        )}
       </div>
     </div>
   );
