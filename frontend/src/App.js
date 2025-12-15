@@ -8,53 +8,52 @@ import Post from './components/Post';
 import PhotosTab from './components/PhotosTab';
 import AboutTab from './components/AboutTab';
 import FriendsTab from './components/FriendsTab';
+import EditProfileModal from './components/EditProfileModal'; // Importando o Modal
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('posts');
-  
   const [user, setUser] = useState(null);
   const [posts, setPosts] = useState([]);
   const [photos, setPhotos] = useState([]);
-  const [suggestions, setSuggestions] = useState([]); // ESTADO NOVO: Lista de Sugestões
+  const [suggestions, setSuggestions] = useState([]);
+  
+  // ESTADO PARA ABRIR/FECHAR MODAL
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   // Mude para o seu link se necessário
   const API_URL = 'https://vngatosocialmedia.pythonanywhere.com';
 
   useEffect(() => {
-    // Carregar Usuário
     fetch(`${API_URL}/user`).then(res => res.json()).then(data => setUser(data));
-    // Carregar Posts
     fetch(`${API_URL}/posts`).then(res => res.json()).then(data => setPosts(data));
-    // Carregar Fotos
     fetch(`${API_URL}/photos`).then(res => res.json()).then(data => setPhotos(data));
-    
-    // NOVO: Carregar Sugestões de Amigos
-    fetch(`${API_URL}/suggestions`)
-      .then(res => res.json())
-      .then(data => setSuggestions(data))
-      .catch(err => console.error("Erro suggestions:", err));
-
+    fetch(`${API_URL}/suggestions`).then(res => res.json()).then(data => setSuggestions(data));
   }, []);
 
-  // Função para criar Post
   const handleNewPost = (text) => {
     fetch(`${API_URL}/posts`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text })
     }).then(res => res.json()).then(newPost => setPosts([newPost, ...posts]));
   };
 
-  // NOVO: Função para Adicionar Amigo
   const handleAddFriend = (id) => {
-    // 1. Atualiza visualmente na hora (Otimista)
-    setSuggestions(suggestions.map(person => {
-      if (person.id === id) {
-        return { ...person, status: person.status === 'add' ? 'sent' : 'add' };
-      }
-      return person;
-    }));
-
-    // 2. Avisa o servidor para salvar no banco
+    setSuggestions(suggestions.map(person => person.id === id ? { ...person, status: person.status === 'add' ? 'sent' : 'add' } : person));
     fetch(`${API_URL}/suggestions/${id}/add`, { method: 'POST' });
+  };
+
+  // NOVA FUNÇÃO: ATUALIZAR USUÁRIO
+  const handleUpdateUser = (updatedData) => {
+    // 1. Atualiza visualmente na hora
+    setUser({ ...user, ...updatedData });
+
+    // 2. Manda para o Backend
+    fetch(`${API_URL}/user`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedData)
+    })
+    .then(res => res.json())
+    .catch(err => console.error("Erro ao atualizar:", err));
   };
 
   if (!user) return <div className="p-10 text-center">Carregando perfil...</div>;
@@ -62,14 +61,28 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#F0F2F5] font-sans text-[#1c1e21]">
       <Header />
+      
+      {/* MODAL DE EDIÇÃO */}
+      <EditProfileModal 
+        isOpen={isEditOpen} 
+        onClose={() => setIsEditOpen(false)} 
+        currentUser={user}
+        onSave={handleUpdateUser}
+      />
+
       <div className="max-w-[875px] mx-auto">
         
-        <ProfileHeader activeTab={activeTab} setActiveTab={setActiveTab} userData={user} />
+        {/* Passamos a função para abrir o modal */}
+        <ProfileHeader 
+          activeTab={activeTab} 
+          setActiveTab={setActiveTab} 
+          userData={user}
+          onEditClick={() => setIsEditOpen(true)}
+        />
 
         {activeTab === 'posts' && (
           <div className="flex gap-3 pb-10 flex-col md:flex-row px-2 md:px-0">
             <IntroSidebar userData={user} />
-            
             <div className="flex-1 min-w-0">
                <CreatePost onPost={handleNewPost} userAvatar={user.avatar_url} />
                <div className="space-y-4">
@@ -77,13 +90,8 @@ export default function App() {
                    <Post key={post.id} time="Recentemente" text={post.text} image={post.image} />
                  ))}
                </div>
-               
-               {/* AGORA PASSAMOS AS PROPS REAIS */}
                <div className="mt-4">
-                 <FriendList 
-                    suggestions={suggestions} 
-                    onAddFriend={handleAddFriend} 
-                 />
+                 <FriendList suggestions={suggestions} onAddFriend={handleAddFriend} />
                </div>
             </div>
           </div>
