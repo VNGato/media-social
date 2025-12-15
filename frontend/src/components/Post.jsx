@@ -1,8 +1,16 @@
 import React, { useState } from 'react';
-import { MoreHorizontal, Globe, ThumbsUp, MessageCircle, Share2 } from 'lucide-react';
+import { MoreHorizontal, Globe, ThumbsUp, MessageCircle, Share2, Trash } from 'lucide-react';
 
-export default function Post({ text, image, time }) {
+// Recebemos a função 'onDelete' do App.js
+export default function Post({ id, text, image, time, onDelete }) {
   const [liked, setLiked] = useState(false);
+
+  const handleDeleteClick = () => {
+    // Pergunta de segurança antes de apagar
+    if (window.confirm("Tem certeza que deseja excluir este post?")) {
+      onDelete(id);
+    }
+  };
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-4">
@@ -21,12 +29,18 @@ export default function Post({ text, image, time }) {
             <Globe size={12} />
           </div>
         </div>
-        <button className="p-2 hover:bg-gray-100 rounded-full text-[#65676B]">
-          <MoreHorizontal size={20} />
+        
+        {/* Botão de Excluir (Lixeira) */}
+        <button 
+          onClick={handleDeleteClick}
+          className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition"
+          title="Excluir post"
+        >
+          <Trash size={18} />
         </button>
       </div>
 
-      {/* Conteúdo (Texto e Imagem) */}
+      {/* Conteúdo */}
       <div className="pb-2">
         {text && <p className="px-3 pb-2 text-[15px] text-[#050505]">{text}</p>}
         {image && (
@@ -38,19 +52,17 @@ export default function Post({ text, image, time }) {
 
       {/* Footer (Likes e Botões) */}
       <div className="px-3">
-        {/* Contagem de Likes */}
         <div className="flex items-center justify-between py-2 border-b border-gray-200 text-[13px] text-[#65676B]">
             <div className="flex items-center gap-1">
                 <div className="bg-blue-500 rounded-full p-1"><ThumbsUp size={10} className="text-white fill-white" /></div>
-                <span>{liked ? 'Você e outras 42 pessoas' : '42 pessoas'}</span>
+                <span>{liked ? 'Você e outras pessoas' : '42 pessoas'}</span>
             </div>
             <div className="flex gap-3">
-                <span>8 comentários</span>
-                <span>2 compartilhamentos</span>
+                <span>Comentários</span>
+                <span>Compartilhamentos</span>
             </div>
         </div>
 
-        {/* Botões de Ação */}
         <div className="flex items-center py-1">
             <button 
               onClick={() => setLiked(!liked)}

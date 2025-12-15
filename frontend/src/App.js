@@ -8,21 +8,21 @@ import Post from './components/Post';
 import PhotosTab from './components/PhotosTab';
 import AboutTab from './components/AboutTab';
 import FriendsTab from './components/FriendsTab';
-import EditProfileModal from './components/EditProfileModal'; // Importando o Modal
+import EditProfileModal from './components/EditProfileModal';
 
 export default function App() {
+  // --- ESTADOS ---
   const [activeTab, setActiveTab] = useState('posts');
   const [user, setUser] = useState(null);
   const [posts, setPosts] = useState([]);
   const [photos, setPhotos] = useState([]);
   const [suggestions, setSuggestions] = useState([]);
-  
-  // ESTADO PARA ABRIR/FECHAR MODAL
   const [isEditOpen, setIsEditOpen] = useState(false);
 
-  // Mude para o seu link se necessário
+  // SEU LINK DO PYTHONANYWHERE
   const API_URL = 'https://vngatosocialmedia.pythonanywhere.com';
 
+  // --- CARREGAR DADOS INICIAIS ---
   useEffect(() => {
     fetch(`${API_URL}/user`).then(res => res.json()).then(data => setUser(data));
     fetch(`${API_URL}/posts`).then(res => res.json()).then(data => setPosts(data));
@@ -30,39 +30,48 @@ export default function App() {
     fetch(`${API_URL}/suggestions`).then(res => res.json()).then(data => setSuggestions(data));
   }, []);
 
+  // --- FUNÇÕES DE AÇÃO ---
+
+  // 1. Criar Post
   const handleNewPost = (text) => {
     fetch(`${API_URL}/posts`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text })
     }).then(res => res.json()).then(newPost => setPosts([newPost, ...posts]));
   };
 
+  // 2. Deletar Post (NOVO!)
+  const handleDeletePost = (id) => {
+    // Remove da tela visualmente
+    setPosts(posts.filter(post => post.id !== id));
+    // Remove do banco de dados
+    fetch(`${API_URL}/posts/${id}`, { method: 'DELETE' })
+      .catch(err => console.error("Erro ao deletar:", err));
+  };
+
+  // 3. Adicionar Amigo
   const handleAddFriend = (id) => {
     setSuggestions(suggestions.map(person => person.id === id ? { ...person, status: person.status === 'add' ? 'sent' : 'add' } : person));
     fetch(`${API_URL}/suggestions/${id}/add`, { method: 'POST' });
   };
 
-  // NOVA FUNÇÃO: ATUALIZAR USUÁRIO
+  // 4. Atualizar Perfil
   const handleUpdateUser = (updatedData) => {
-    // 1. Atualiza visualmente na hora
     setUser({ ...user, ...updatedData });
-
-    // 2. Manda para o Backend
     fetch(`${API_URL}/user`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updatedData)
-    })
-    .then(res => res.json())
-    .catch(err => console.error("Erro ao atualizar:", err));
+    }).catch(err => console.error("Erro ao atualizar:", err));
   };
 
+  // Enquanto carrega...
   if (!user) return <div className="p-10 text-center">Carregando perfil...</div>;
 
   return (
     <div className="min-h-screen bg-[#F0F2F5] font-sans text-[#1c1e21]">
       <Header />
       
-      {/* MODAL DE EDIÇÃO */}
+      {/* MODAL (JANELA) DE EDIÇÃO */}
       <EditProfileModal 
         isOpen={isEditOpen} 
         onClose={() => setIsEditOpen(false)} 
@@ -72,7 +81,7 @@ export default function App() {
 
       <div className="max-w-[875px] mx-auto">
         
-        {/* Passamos a função para abrir o modal */}
+        {/* CABEÇALHO DO PERFIL */}
         <ProfileHeader 
           activeTab={activeTab} 
           setActiveTab={setActiveTab} 
@@ -80,16 +89,28 @@ export default function App() {
           onEditClick={() => setIsEditOpen(true)}
         />
 
+        {/* --- CONTEÚDO DAS ABAS --- */}
+
         {activeTab === 'posts' && (
           <div className="flex gap-3 pb-10 flex-col md:flex-row px-2 md:px-0">
             <IntroSidebar userData={user} />
+            
             <div className="flex-1 min-w-0">
                <CreatePost onPost={handleNewPost} userAvatar={user.avatar_url} />
+               
                <div className="space-y-4">
                  {posts.map((post) => (
-                   <Post key={post.id} time="Recentemente" text={post.text} image={post.image} />
+                   <Post 
+                     key={post.id} 
+                     id={post.id}      // Passando ID para deletar
+                     time="Recentemente" 
+                     text={post.text} 
+                     image={post.image}
+                     onDelete={handleDeletePost} // Passando a função de deletar
+                   />
                  ))}
                </div>
+               
                <div className="mt-4">
                  <FriendList suggestions={suggestions} onAddFriend={handleAddFriend} />
                </div>
